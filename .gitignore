@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 __pycache__/
 *.pyc
 *.pid
@@ -8,3 +9,10 @@ incident_log.txt
 test_env/
 venv/
 .venv/
+=======
+# Ignore dynamically generated hackathon files
+Safe_Target_Folder/
+canary_config.json
+__pycache__/
+*.pyc
+>>>>>>> 1dd286d2b1793e40ec278d8c90fc78c49ada235c
