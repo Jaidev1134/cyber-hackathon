@@ -1,6 +1,6 @@
 import os
 import glob
-from config import TEST_DIR, PID_FILE, KEY_FILE
+from config import TEST_DIR, PID_FILE, KEY_FILE, ALERT_FILE, INCIDENT_LOG
 
 def reset_environment():
     # Remove all locked files
@@ -11,8 +11,9 @@ def reset_environment():
         except OSError:
             pass
 
-    # Remove PID and KEY files
-    for f in [PID_FILE, KEY_FILE]:
+    # Remove PID, KEY, and alert files
+    demo_log = os.path.join(os.path.dirname(TEST_DIR), "..", "demo_run.log")
+    for f in [PID_FILE, KEY_FILE, ALERT_FILE, INCIDENT_LOG, demo_log]:
         if os.path.exists(f):
             try:
                 os.remove(f)

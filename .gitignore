@@ -5,5 +5,6 @@ __pycache__/
 *.tmp
 alert.json
 incident_log.txt
-test_env/*.locked
-test_env/encryption.key
+test_env/
+venv/
+.venv/

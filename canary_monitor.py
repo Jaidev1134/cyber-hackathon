@@ -22,6 +22,10 @@ from pathlib import Path
 from typing import Any, Iterable
 from uuid import uuid4
 
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+
 try:
     import psutil
 except ImportError:  # pragma: no cover - handled at runtime for friendlier CLI.
@@ -441,6 +445,11 @@ def run_monitor(config: MonitorConfig) -> int:
     signal.signal(signal.SIGTERM, handle_stop)
 
     observer.start()
+    
+    # Signal readiness via file
+    with open("canary.ready", "w") as f:
+        f.write("ready")
+        
     try:
         while observer.is_alive() and not stop_requested:
             time.sleep(config.heartbeat_seconds)

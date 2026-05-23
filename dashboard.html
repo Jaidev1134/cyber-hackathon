@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canary Shield</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-darkest: #0a0c0f;
+            --bg-panel: #0f1318;
+            --bg-card: #141920;
+            --border-color: #1e2730;
+            --accent-green: #00ff88;
+            --accent-red: #ff3355;
+            --accent-yellow: #ffd700;
+            --accent-orange: #ff8c00;
+            --text-body: #e8eaf0;
+            --text-muted: #4a5568;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-darkest);
+            color: var(--text-body);
+            font-family: 'Rajdhani', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        body.modal-open .col {
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+        }
+
+        .badge {
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .badge.idle {
+            color: var(--accent-green);
+            border-color: var(--accent-green);
+        }
+
+        .badge.active {
+            color: var(--accent-red);
+            border-color: var(--accent-red);
+            animation: pulse-border 1.5s infinite;
+        }
+
+        .badge.done {
+            color: var(--accent-yellow);
+            border-color: var(--accent-yellow);
+        }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(255, 51, 85, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 51, 85, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 51, 85, 0); }
+        }
+
+        /* Main Layout */
+        main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .col {
+            padding: 1rem;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .col-left { width: 280px; flex-shrink: 0; background-color: var(--bg-panel); }
+        .col-mid { flex: 1; background-color: var(--bg-darkest); }
+        .col-right { width: 260px; flex-shrink: 0; background-color: var(--bg-panel); border-right: none; }
+
+        /* Typography */
+        h2 {
+            font-size: 1rem;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        /* File Tree */
+        .file-tree {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .tree-folder {
+            color: var(--text-muted);
+            margin: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tree-file {
+            display: flex;
+            align-items: center;
+            padding: 0.4rem 0.5rem;
+            margin-bottom: 0.2rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .tree-file:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tree-file .name { flex: 1; margin-left: 0.5rem; }
+        .tree-file .tag {
+            font-size: 0.75rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 2px;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .file-safe { color: var(--text-body); }
+        
+        .file-canary { color: var(--accent-yellow); }
+        .file-canary .tag { background: rgba(255,215,0,0.1); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); }
+
+        .file-encrypted { color: var(--accent-red); background: rgba(255,51,85,0.1); }
+        .file-encrypted .tag { background: var(--accent-red); color: var(--bg-darkest); }
+
+        .file-saved { color: var(--accent-green); background: rgba(0,255,136,0.1); }
+        .file-saved .tag { background: var(--accent-green); color: var(--bg-darkest); }
+
+        /* Terminal */
+        .terminal {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: var(--text-muted);
+            padding: 1rem;
+            flex: 1;
+            overflow-y: auto;
+            white-space: pre-wrap; /* Fix for ASCII art and spaces */
+        }
+
+        .log-line { margin-bottom: 0.2rem; word-break: break-all; }
+        .log-prefix-attacker { color: var(--accent-red); }
+        .log-prefix-defense { color: var(--accent-yellow); }
+        .log-prefix-kill { color: var(--accent-orange); }
+        .log-prefix-system { color: #8fa1b3; }
+        .log-text { color: var(--text-body); }
+        
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background-color: var(--text-body);
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+            margin-left: 4px;
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Threat Meter */
+        .threat-meter-container { margin-bottom: 2rem; }
+        .meter-bg {
+            width: 100%;
+            height: 8px;
+            background: #1e2730;
+            border: 1px solid #2a3540;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        .meter-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--accent-green);
+            transition: width 0.5s ease, background-color 0.5s ease;
+        }
+
+        /* Stat Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-body);
+        }
+
+        /* Footer */
+        footer {
+            padding: 1.5rem;
+            background-color: var(--bg-panel);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+        }
+
+        .launch-btn {
+            background: transparent;
+            color: var(--accent-red);
+            border: 2px solid var(--accent-red);
+            padding: 1rem 3rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(255, 51, 85, 0.2);
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 15px rgba(255, 51, 85, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(255, 51, 85, 0.5); }
+            100% { box-shadow: 0 0 15px rgba(255, 51, 85, 0.2); }
+        }
+
+        .launch-btn:hover:not(:disabled) {
+            background: var(--accent-red);
+            color: var(--bg-darkest);
+            box-shadow: 0 0 30px rgba(255, 51, 85, 0.6);
+        }
+
+        .launch-btn:disabled {
+            color: var(--text-muted);
+            border-color: var(--border-color);
+            background: transparent;
+            cursor: not-allowed;
+            animation: none;
+            box-shadow: none;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: transparent; /* Remove dark background so terminal is visible */
+            display: flex;
+            align-items: flex-end; /* Align to bottom */
+            justify-content: flex-end; /* Align to right */
+            padding: 2rem; /* Add padding from screen edges */
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            z-index: 1000;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: rgba(15, 19, 24, 0.95); /* Slightly translucent */
+            backdrop-filter: blur(5px);
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+            width: 400px;
+            border-radius: 8px;
+            transform: translateY(50px);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            pointer-events: auto; /* Allow interaction with modal */
+        }
+
+        .modal-overlay.show .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--accent-yellow);
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            right: 0;
+            top: 0;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: var(--accent-red);
+        }
+
+        .modal-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .modal-label { color: var(--text-muted); }
+        .modal-val { color: var(--text-body); font-variant-numeric: tabular-nums; }
+
+        .mitre-box {
+            margin: 2rem 0;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-left: 4px solid var(--accent-yellow);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+        }
+
+        .modal-summary {
+            text-align: center;
+            color: var(--accent-green);
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .run-again-btn {
+            width: 100%;
+            padding: 1rem;
+            background: transparent;
+            border: 1px solid var(--text-muted);
+            color: var(--text-body);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .run-again-btn:hover {
+            background: var(--text-body);
+            color: var(--bg-darkest);
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">CANARY SHIELD</div>
+        <div id="statusBadge" class="badge idle">SYSTEM ARMED</div>
+    </header>
+
+    <main>
+        <!-- Left Col: File Tree -->
+        <div class="col col-left">
+            <h2>FILE SYSTEM</h2>
+            <div id="fileTree" class="file-tree">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Middle Col: Terminal -->
+        <div class="col col-mid">
+            <h2>LIVE FEED</h2>
+            <div id="terminal" class="terminal">
+                <div class="log-line">> Canary Shield v1.0 initialised</div>
+                <div class="log-line">> Monitoring 7 files across 3 directories</div>
+                <div class="log-line">> Canary planted: !00_canary_alpha.txt</div>
+                <div class="log-line">> Awaiting threat...</div>
+                <!-- Appended dynamically -->
+            </div>
+        </div>
+
+        <!-- Right Col: Stats -->
+        <div class="col col-right">
+            <div class="threat-meter-container">
+                <h2>ENCRYPTION PROGRESS</h2>
+                <div class="meter-bg">
+                    <div id="threatMeter" class="meter-fill"></div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">LATENCY</div>
+                    <div id="statLatency" class="stat-value">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">ENCRYPTED</div>
+                    <div id="statEncrypted" class="stat-value">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">SAVED</div>
+                    <div id="statSaved" class="stat-value">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">PROTECTION</div>
+                    <div id="statProtection" class="stat-value">--</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <button id="launchBtn" class="launch-btn" onclick="launchDemo()">LAUNCH RANSOMWARE SIMULATION</button>
+    </footer>
+
+    <!-- Incident Modal -->
+    <div id="incidentModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <span>⚠</span> INCIDENT REPORT
+                <span class="close-btn" onclick="closeModal()">✖</span>
+            </div>
+            
+            <div class="modal-row">
+                <span class="modal-label">Detection Latency</span>
+                <span class="modal-val"><span id="modLatency">0</span>s</span>
+            </div>
+            <div class="modal-row">
+                <span class="modal-label">Encrypted Files</span>
+                <span class="modal-val" id="modEncrypted">0</span>
+            </div>
+            <div class="modal-row">
+                <span class="modal-label">Files Saved</span>
+                <span class="modal-val" id="modSaved">0</span>
+            </div>
+            <div class="modal-row">
+                <span class="modal-label">Protection Rate</span>
+                <span class="modal-val"><span id="modProtection">0</span>%</span>
+            </div>
+
+            <div class="mitre-box">
+                MITRE ATT&CK: T1486<br>
+                Data Encrypted for Impact
+            </div>
+
+            <div class="modal-summary" id="modSummary">
+                Threat neutralised. 0 of 7 files protected.
+            </div>
+
+            <button class="run-again-btn" onclick="resetDemo()">RUN AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        // API Endpoint (Using relative paths since it's served by the same server)
+        const API_URL = "http://127.0.0.1:5001";
+        
+        let pollInterval = null;
+        let lastLogCount = 0;
+        let isDone = false;
+
+        // DOM Elements
+        const statusBadge = document.getElementById('statusBadge');
+        const launchBtn = document.getElementById('launchBtn');
+        const fileTree = document.getElementById('fileTree');
+        const terminal = document.getElementById('terminal');
+        const threatMeter = document.getElementById('threatMeter');
+        const incidentModal = document.getElementById('incidentModal');
+        
+        const statLatency = document.getElementById('statLatency');
+        const statEncrypted = document.getElementById('statEncrypted');
+        const statSaved = document.getElementById('statSaved');
+        const statProtection = document.getElementById('statProtection');
+
+        // Cursor logic
+        let cursorEl = document.createElement('span');
+        cursorEl.className = 'cursor';
+
+        function updateTerminalCursor() {
+            if (cursorEl.parentNode) cursorEl.parentNode.removeChild(cursorEl);
+            terminal.appendChild(cursorEl);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+        updateTerminalCursor();
+
+        // 1. Launch Sequence
+        async function launchDemo() {
+            launchBtn.disabled = true;
+            try {
+                await fetch(`${API_URL}/launch`, { method: 'POST' });
+                startPolling();
+            } catch (err) {
+                console.error("Failed to launch", err);
+                launchBtn.disabled = false;
+            }
+        }
+
+        // 2. Reset Sequence
+        async function resetDemo() {
+            incidentModal.classList.remove('show');
+            document.body.classList.remove('modal-open');
+            
+            try {
+                await fetch(`${API_URL}/reset`, { method: 'POST' });
+                
+                // Reset UI state to idle visually
+                isDone = false;
+                lastLogCount = 0;
+                
+                statusBadge.className = "badge idle";
+                statusBadge.textContent = "SYSTEM ARMED";
+                launchBtn.disabled = false;
+                
+                threatMeter.style.width = "0%";
+                threatMeter.style.backgroundColor = "var(--accent-green)";
+                
+                statLatency.textContent = "--";
+                statEncrypted.textContent = "--";
+                statSaved.textContent = "--";
+                statProtection.textContent = "--";
+                
+                terminal.innerHTML = `
+                    <div class="log-line">> Canary Shield v1.0 initialised</div>
+                    <div class="log-line">> Monitoring 7 files across 3 directories</div>
+                    <div class="log-line">> Canary planted: !00_canary_alpha.txt</div>
+                    <div class="log-line">> Awaiting threat...</div>
+                `;
+                updateTerminalCursor();
+                
+                // Fetch fresh status to rebuild file tree
+                pollStatus();
+
+            } catch (err) {
+                console.error("Failed to reset", err);
+            }
+        }
+
+        // 3. Polling Engine
+        function startPolling() {
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(pollStatus, 500);
+        }
+
+        async function pollStatus() {
+            try {
+                const res = await fetch(`${API_URL}/status`);
+                const data = await res.json();
+                processStatus(data);
+            } catch (err) {
+                console.error("Poll failed", err);
+            }
+        }
+
+        // 4. Data Processing
+        function processStatus(data) {
+            // A. Update Badge
+            if (data.state === 'idle') {
+                statusBadge.className = "badge idle";
+                statusBadge.textContent = "SYSTEM ARMED";
+            } else if (data.state === 'starting' || data.state === 'running') {
+                statusBadge.className = "badge active";
+                statusBadge.textContent = "BREACH DETECTED";
+            } else if (data.state === 'done') {
+                statusBadge.className = "badge done";
+                statusBadge.textContent = "THREAT NEUTRALISED";
+            }
+
+            // B. Rebuild File Tree
+            renderFileTree(data.files, data.state);
+
+            // C. Terminal Feed
+            if (data.log_lines.length > lastLogCount) {
+                const newLines = data.log_lines.slice(lastLogCount);
+                newLines.forEach(line => appendLogLine(line));
+                lastLogCount = data.log_lines.length;
+            }
+
+            // D. Threat Meter
+            const encryptedCount = data.files.filter(f => f.status === 'encrypted').length;
+            const totalCount = data.files.length;
+            if (totalCount > 0) {
+                const pct = (encryptedCount / totalCount) * 100;
+                threatMeter.style.width = `${pct}%`;
+                if (pct === 0) threatMeter.style.backgroundColor = "var(--accent-green)";
+                else if (pct <= 50) threatMeter.style.backgroundColor = "var(--accent-yellow)";
+                else threatMeter.style.backgroundColor = "var(--accent-red)";
+            }
+
+            // E. Stats
+            if (data.state === 'done' && data.stats) {
+                statLatency.textContent = data.stats.latency + "s";
+                statEncrypted.textContent = data.stats.encrypted;
+                statSaved.textContent = data.stats.saved;
+                statProtection.textContent = data.stats.protection_rate + "%";
+            }
+
+            // F. Modal Trigger
+            if (data.state === 'done' && !isDone) {
+                isDone = true;
+                clearInterval(pollInterval); // Stop polling
+                setTimeout(() => showModal(data.stats), 1000); // 1s dramatic pause
+            }
+        }
+
+        // --- Render Helpers ---
+
+        function renderFileTree(files, state) {
+            fileTree.innerHTML = '';
+            
+            // Build pseudo-tree dict for any depth
+            let tree = { '/': [] };
+            let dirs = new Set();
+            
+            files.forEach(f => {
+                if (f.name.includes('/')) {
+                    const lastSlash = f.name.lastIndexOf('/');
+                    const dir = f.name.substring(0, lastSlash);
+                    const file = f.name.substring(lastSlash + 1);
+                    dirs.add(dir);
+                    if (!tree[dir]) tree[dir] = [];
+                    tree[dir].push({ name: file, status: f.status, original: f.name });
+                } else {
+                    tree['/'].push({ name: f.name, status: f.status, original: f.name });
+                }
+            });
+
+            // Render root files
+            tree['/'].forEach(f => fileTree.appendChild(createFileNode(f, state)));
+            
+            // Render subdirectories
+            Array.from(dirs).sort().forEach(dir => {
+                const dirDiv = document.createElement('div');
+                dirDiv.className = 'tree-folder';
+                // Indent based on depth
+                const depth = dir.split('/').length - 1;
+                dirDiv.style.marginLeft = `${depth * 1.5}rem`;
+                dirDiv.innerHTML = `📁 ${dir}/`;
+                fileTree.appendChild(dirDiv);
+                
+                tree[dir].forEach(f => {
+                    const node = createFileNode(f, state);
+                    node.style.marginLeft = `${(depth + 1) * 1.5}rem`;
+                    fileTree.appendChild(node);
+                });
+            });
+        }
+
+        function createFileNode(f, state) {
+            const div = document.createElement('div');
+            div.className = 'tree-file';
+            
+            let icon = '📄';
+            let tagHTML = '';
+            
+            // Hardcode canary style overrides everything if safe
+            const isCanary = f.original.includes("canary");
+            
+            if (f.status === 'encrypted') {
+                div.classList.add('file-encrypted');
+                icon = '🔒';
+                tagHTML = `<span class="tag">LOCKED</span>`;
+            } else if (state === 'done') {
+                div.classList.add('file-saved');
+                tagHTML = `<span class="tag">SAFE</span>`;
+            } else if (isCanary) {
+                div.classList.add('file-canary');
+                tagHTML = `<span class="tag">CANARY</span>`;
+            } else {
+                div.classList.add('file-safe');
+            }
+
+            // Click to view file
+            div.onclick = () => {
+                window.open(`${API_URL}/file/${f.original}`, '_blank');
+            };
+
+            div.innerHTML = `
+                <span>${icon}</span>
+                <span class="name">${f.name}</span>
+                ${tagHTML}
+            `;
+            return div;
+        }
+
+        function appendLogLine(line) {
+            const div = document.createElement('div');
+            div.className = 'log-line';
+            
+            // Syntax highlight prefixes
+            let formattedLine = line
+                .replace(/\[ATTACKER\]/g, '<span class="log-prefix-attacker">[ATTACKER]</span>')
+                .replace(/\[DEFENSE\]/g, '<span class="log-prefix-defense">[DEFENSE]</span>')
+                .replace(/\[KILL\]/g, '<span class="log-prefix-kill">[KILL]</span>')
+                .replace(/\[SYSTEM\]/g, '<span class="log-prefix-system">[SYSTEM]</span>');
+
+            div.innerHTML = `<span class="log-text">${formattedLine}</span>`;
+            
+            if (cursorEl.parentNode) cursorEl.parentNode.removeChild(cursorEl);
+            terminal.appendChild(div);
+            updateTerminalCursor();
+        }
+
+        function showModal(stats) {
+            document.body.classList.add('modal-open');
+            incidentModal.classList.add('show');
+            document.getElementById('modSummary').textContent = `Threat neutralised. ${stats.saved} of ${stats.saved + stats.encrypted} files protected.`;
+            
+            animateValue("modLatency", 0, stats.latency, 1500, true);
+            animateValue("modEncrypted", 0, stats.encrypted, 1500, false);
+            animateValue("modSaved", 0, stats.saved, 1500, false);
+            animateValue("modProtection", 0, stats.protection_rate, 1500, true);
+        }
+
+        function closeModal() {
+            incidentModal.classList.remove('show');
+            document.body.classList.remove('modal-open');
+        }
+
+        function animateValue(id, start, end, duration, isFloat) {
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const current = progress * (end - start);
+                
+                obj.textContent = isFloat ? current.toFixed(1) : Math.floor(current);
+                
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    obj.textContent = isFloat ? end.toFixed(1) : end;
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // Init initial fetch
+        pollStatus();
+
+    </script>
+</body>
+</html>

@@ -23,6 +23,10 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+# Force UTF-8 encoding for stdout on Windows
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding='utf-8')
+
 import psutil
 from colorama import Fore, Style, init as colorama_init
 
@@ -180,25 +184,28 @@ def validate_process(pid: int) -> psutil.Process | None:
 
 def kill_process(proc: psutil.Process) -> bool:
     """
-    Terminate *proc* immediately (SIGKILL on POSIX, TerminateProcess on
-    Windows) and wait up to 3 seconds for it to exit.
+    Attempt to terminate *proc* gracefully with SIGTERM.
+    Wait up to 3 seconds. If it ignores the signal, escalate to SIGKILL.
 
     Returns True on success, False otherwise.
     """
     pid = proc.pid
     try:
-        action(f"Sending SIGKILL to PID {pid} …")
+        action(f"Sending SIGTERM to PID {pid} …")
         proc.terminate()
-        proc.wait(timeout=3)
-        return True
+        try:
+            proc.wait(timeout=3)
+            return True
+        except psutil.TimeoutExpired:
+            warn(f"Process {pid} did not exit gracefully within 3 seconds. Escalating to SIGKILL.")
+            proc.kill()
+            proc.wait(timeout=1)
+            return True
     except psutil.NoSuchProcess:
         # Already dead — counts as a win.
         return True
     except psutil.AccessDenied:
         error(f"Permission denied — cannot kill PID {pid}.")
-        return False
-    except psutil.TimeoutExpired:
-        warn(f"Process {pid} did not exit within 3 seconds after SIGTERM.")
         return False
 
 
@@ -390,7 +397,7 @@ def write_incident_log(
     )
 
     try:
-        with INCIDENT_LOG.open("a") as fh:
+        with INCIDENT_LOG.open("a", encoding="utf-8") as fh:
             fh.write(record)
         success(f"Incident logged → {INCIDENT_LOG}")
     except OSError as exc:
