@@ -1,107 +1,53 @@
-Ransomware Early-Warning System using Canary Files
+# Ransomware Early-Warning System
 
-Overview
+## What is This Project About?
 
-This project demonstrates a ransomware detection and prevention system using canary files and real-time file monitoring.
+This project is like a **security guard for your computer files**. It's designed to catch and stop ransomware attacks before they destroy your important documents, photos, and personal files.
 
-The system contains two main components:
+## The Problem It Solves
 
-1. Ransomware Simulator
-    * Simulates ransomware behavior
-    * Enumerates files in a target directory
-    * Encrypts files using AES encryption
-2. Canary-Based Defense System
-    * Places hidden canary files in monitored directories
-    * Detects unauthorized access/modification
-    * Immediately kills the malicious encryption process
-    * Sends alerts within 2 seconds
-    * Preserves remaining unencrypted files
+Ransomware is a type of computer virus that locks up your files and makes them unreadable. Once it infects your system, it can encrypt (scramble) all your important data and demand money to unlock it. By the time you notice something is wrong, the damage is often already done.
 
-This project is designed for educational and defensive cybersecurity research purposes only.
+## The Solution
 
-⸻
+This project uses **canary files** — think of them as digital "bait" files spread throughout your system. Here's how it works:
 
-MITRE ATT&CK Mapping
-Technique
+**Imagine your computer as a house:**
+- The **Canary Files** are like alarm sensors placed around the house
+- The **Defense System** is like a security guard constantly checking if anyone is tampering with these sensors
+- If the ransomware tries to attack and touches these alarm sensors, **the guard immediately catches it and stops it**
 
-ID
+## What Makes It Special
 
-Data Encrypted for Impact
+✅ **Ultra-Fast Detection** — Catches attacks within 2 seconds
+✅ **Stops Attacks Immediately** — Prevents further file encryption
+✅ **Saves Your Files** — Keeps most of your data safe and unencrypted
+✅ **Smart Alerts** — Notifies you instantly when a threat is detected
 
-T1486
-Features
+## How It Works (Simple Explanation)
 
-Ransomware Simulator
+1. **Setup Phase**: The system places hidden canary files in your important directories
+2. **Monitoring Phase**: It constantly watches these canary files 24/7
+3. **Detection Phase**: The moment ransomware tries to encrypt these canary files, the system knows there's an attack
+4. **Response Phase**: It immediately stops the malicious process, preventing further damage
 
-* Recursive file enumeration
-* AES file encryption
-* Simulated ransomware extension renaming
-* Multi-threaded encryption
-* Logging of encrypted files
+## Who Should Use This?
 
-Canary Defense Daemon
+- **Students & Researchers** interested in cybersecurity
+- **IT Professionals** who want to understand ransomware defense
+- **Anyone** curious about how computer security works
 
-* Hidden canary file generation
-* Real-time file monitoring
-* Instant alert generation
-* Process identification
-* Automatic malicious process termination
-* File integrity verification
+## Important Note
 
-Additional Features
+This is **educational software** meant for learning about cybersecurity. It should only be used for:
+- Testing in safe, isolated environments
+- Learning about security systems
+- Research and development purposes
 
-* Docker-based isolated environment
-* Recovery statistics
-* Encryption timing metrics
-* Detection latency measurement
-* Safe test directory execution
+## Getting Started
 
-⸻
+This project uses modern software tools and runs in a controlled environment to keep your system safe while testing.
 
-Project Architecture
-                    +----------------------+
-                    |   Target Directory   |
-                    +----------------------+
-                               |
-             ----------------------------------------
-             |                                      |
-             v                                      v
+---
 
-+-----------------------+          +-----------------------------+
-| Ransomware Simulator  |          | Canary Monitoring Daemon    |
-|-----------------------|          |-----------------------------|
-| Enumerates files      |          | Watches canary files        |
-| AES Encrypts files    |          | Detects modifications       |
-| Renames extensions    |          | Sends alerts                |
-| Simulates attack      |          | Kills malicious process     |
-+-----------------------+          +-----------------------------+
-                                                |
-                                                v
-                                  +-----------------------------+
-                                  |  Remaining Files Preserved  |
-                                  +-----------------------------+
-                      Tech Stack
-
-Programming Language
-
-* Python 3.10+
-
-Libraries
-
-* cryptography
-* watchdog
-* psutil
-
-Monitoring Tools
-
-* Linux inotify
-* Windows ReadDirectoryChangesW
-* Wazuh FIM
-
-Environment
-
-* Docker
-
-⸻
-
-Folder Structure
+**Stay Safe Online!** This project demonstrates how modern security systems protect your digital life. 🛡️
